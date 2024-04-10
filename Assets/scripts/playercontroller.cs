@@ -2,15 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class playercontroller : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
-    public float movespeed = 5f;
+    //silnik fizyczny dla obiektu gracza
+    Rigidbody rb;
+    //si³a skoku
     public float jumpForce = 5f;
 
+    public float moveSpeed = 5f;
     // Start is called before the first frame update
-    Rigidbody rb;
     void Start()
     {
+        //przypnij rigidbody gracza do zmiennej rb
         rb = GetComponent<Rigidbody>();
     }
 
@@ -18,23 +21,36 @@ public class playercontroller : MonoBehaviour
     void FixedUpdate()
     {
         //transform.position += new Vector3(1, 0, 0) * Time.deltaTime;
+        //mo¿na proœciej: Vector3.right
 
-        float X = Input.GetAxis("Horizontal");
-        Debug.Log(X);
+        //zczytaj klawiaturê w osi poziomej:
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
+        //wyœwietl w konsoli stan klawiatury
+        //Debug.Log(horizontalInput);
 
-        Vector3 movemen = Vector3.right * X;
+        //wylicz przesuniêcie w osi x
+        Vector3 movement = Vector3.right * horizontalInput;
 
-        float y = Input.GetAxis("Vertical");
+        //zczytaj z klawiatury oœ y
+        float verticalInput = Input.GetAxisRaw("Vertical");
 
-        movemen += Vector3.forward * y;
+        //wylicz przesuniêcie w osi y i dodaj do istniej¹cego przesuniêcia w osi x
+        movement += Vector3.forward * verticalInput;
 
-        movemen = movemen.normalized;
+        //normalizujemy wektor
+        movement = movement.normalized;
+        //poprawka na czas od ostatniej klatki
+        movement *= Time.deltaTime;
+        //pomnó¿ przez prêdkoœæ ruchu
+        movement *= moveSpeed;
 
-        movemen *= Time.deltaTime;
+        //przesuñ gracza w osi x
+        //transform.position += movement;
 
-        movemen *= movespeed;
+        //próbujemy u¿yc translate zamiast dodawac wspó³rzêdne
+        transform.Translate(movement);
 
-        transform.position += movemen;
+
     }
     //spróbujmy obejœæ problem z opóŸnieniem wejœcia poprzez przeniesienie go do update
     void Update()
@@ -55,5 +71,24 @@ public class playercontroller : MonoBehaviour
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
 
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        //ta funkcja wykryje za ka¿dym razem kiedy gracz wejdz w colider który jest triggerem
+        //mo¿e to byæ kamera ale mo¿e to te¿ byc koniec poziomu
+
+        if (other.CompareTag("LevelEnd"))
+        {
+            //stanelismy a miejscu gdzie jest koniec poziomu - wygraliœmy
+
+            //find->nazwaobiektu->nazwaskryptu->nazwa funkcji
+            GameObject.Find("LevelManager").GetComponent<LevelManager>().OnWin();
+        }
+        if (other.CompareTag("CameraView"))
+        {
+            //kamera nas zobaczy³a - przegraliœmy
+            GameObject.Find("LevelManager").GetComponent<LevelManager>().OnLose();
+
+        }
     }
 }
